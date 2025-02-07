@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video to Frames Converter</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Video to Frames Converter</h1>
+    <form action="/download" method="POST">
+        <label for="video_url">Enter Video URL:</label>
+        <input type="text" id="video_url" name="video_url" required>
+        <button type="submit">Download and Extract Frames</button>
+    </form>
+</body>
+</html>
