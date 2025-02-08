@@ -1,17 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video to Frames Converter</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Video Downloader</title>
+    <script>
+        function startDownload() {
+            const sessionId = Date.now();
+            const eventSource = new EventSource(`/status/${sessionId}`);
+            
+            eventSource.onmessage = function(e) {
+                const progress = JSON.parse(e.data);
+                const statusDiv = document.getElementById('status');
+                
+                if (progress.error) {
+                    statusDiv.innerHTML = `Error: ${progress.error}`;
+                    eventSource.close();
+                } else if (progress.status === 'ready_for_download') {
+                    window.location = '/download_frames';
+                    eventSource.close();
+                } else {
+                    statusDiv.innerHTML = `
+                        Progress: ${progress.percentage || '0%'}<br>
+                        Speed: ${progress.speed || 'N/A'}<br>
+                        ETA: ${progress.eta || 'N/A'}
+                    `;
+                }
+            };
+            
+            // Submit form after setting up SSE
+            const form = document.getElementById('downloadForm');
+            form.action = `/download?_session=${sessionId}`;
+            form.submit();
+        }
+    </script>
 </head>
 <body>
-    <h1>Video to Frames Converter</h1>
-    <form action="/download" method="POST">
-        <label for="video_url">Enter Video URL:</label>
-        <input type="text" id="video_url" name="video_url" required>
-        <button type="submit">Download and Extract Frames</button>
+    <h1>Video Downloader</h1>
+    <form id="downloadForm" onsubmit="startDownload(); return false;">
+        <input type="text" name="video_url" placeholder="Enter video URL" required>
+        <button type="submit">Download</button>
     </form>
+    <div id="status"></div>
 </body>
 </html>
