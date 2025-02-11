@@ -3,39 +3,49 @@
 <head>
     <title>Video Downloader</title>
     <script>
-        function startDownload() {
+        function startDownload(event) {
+            event.preventDefault();  // Prevent default form submission
             const sessionId = Date.now();
-            const eventSource = new EventSource(`/status/${sessionId}`);
-            
-            eventSource.onmessage = function(e) {
-                const progress = JSON.parse(e.data);
-                const statusDiv = document.getElementById('status');
-                
-                if (progress.error) {
-                    statusDiv.innerHTML = `Error: ${progress.error}`;
-                    eventSource.close();
-                } else if (progress.status === 'ready_for_download') {
-                    window.location = '/download_frames';
-                    eventSource.close();
-                } else {
-                    statusDiv.innerHTML = `
-                        Progress: ${progress.percentage || '0%'}<br>
-                        Speed: ${progress.speed || 'N/A'}<br>
-                        ETA: ${progress.eta || 'N/A'}
-                    `;
-                }
-            };
-            
-            // Submit form after setting up SSE
             const form = document.getElementById('downloadForm');
-            form.action = `/download?_session=${sessionId}`;
-            form.submit();
+            const formData = new FormData(form);
+            
+            // 1. Send POST request to /download
+            fetch('/download', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // 2. After download starts, listen for progress
+                const eventSource = new EventSource(`/status/${sessionId}`);
+                
+                eventSource.onmessage = function(e) {
+                    const progress = JSON.parse(e.data);
+                    const statusDiv = document.getElementById('status');
+                    
+                    if (progress.error) {
+                        statusDiv.innerHTML = `Error: ${progress.error}`;
+                        eventSource.close();
+                    } else if (progress.status === 'ready_for_download') {
+                        window.location = '/download_frames';
+                        eventSource.close();
+                    } else {
+                        statusDiv.innerHTML = `
+                            Progress: ${progress.percentage || '0%'}<br>
+                            Speed: ${progress.speed || 'N/A'}<br>
+                            ETA: ${progress.eta || 'N/A'}
+                        `;
+                    }
+                };
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         }
     </script>
 </head>
 <body>
     <h1>Video Downloader</h1>
-    <form id="downloadForm" onsubmit="startDownload(); return false;">
+    <form id="downloadForm" onsubmit="startDownload(event)">
         <input type="text" name="video_url" placeholder="Enter video URL" required>
         <button type="submit">Download</button>
     </form>
